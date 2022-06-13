@@ -1,0 +1,15 @@
+### react ###
+.DS_*
+**/*.backup.*
+**/*.back.*
+
+psd
+thumb
+sketch
+
+.idea
+.vscode
+
+*.log
+*.swp
+*.swo

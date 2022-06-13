@@ -1,4 +1,4 @@
-module prom2click
+module github.com/clickvisual/prom2click
 
 go 1.18
 
