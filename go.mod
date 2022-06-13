@@ -1,6 +1,6 @@
 module github.com/clickvisual/prom2click
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go v1.5.4
@@ -8,7 +8,7 @@ require (
 	github.com/gotomicro/ego v1.1.2
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.34.0
-	github.com/prometheus/prometheus v0.36.1
+	github.com/prometheus/prometheus v0.35.0
 	github.com/stretchr/testify v1.7.2
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/trace v1.7.0
@@ -64,7 +64,6 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
