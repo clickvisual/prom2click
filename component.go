@@ -70,7 +70,7 @@ func (c *Component) route() {
 		c.writer.process(prompbReq)
 	})
 
-	c.Engine.GET(c.config.ClickhouseHTTPReadPath, func(ctx *gin.Context) {
+	c.Engine.POST(c.config.ClickhouseHTTPReadPath, func(ctx *gin.Context) {
 		prompbReq, err := remote.DecodeReadRequest(ctx.Request)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
@@ -82,8 +82,8 @@ func (c *Component) route() {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		//ctx.Header("Content-Type", "application/x-protobuf")
-		//ctx.Header("Content-Encoding", "snappy")
+		// ctx.Header("Content-Type", "application/x-protobuf")
+		// ctx.Header("Content-Encoding", "snappy")
 		err = remote.EncodeReadResponse(resp, ctx.Writer)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())
