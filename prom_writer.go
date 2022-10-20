@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -49,37 +50,42 @@ func NewWriter(conf *config) (*promWriter, error) {
 
 	w.tx = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "sent_samples_total",
-			Help: "Total number of processed samples sent to remote storage.",
+			Name:        "sent_samples_total",
+			Help:        "Total number of processed samples sent to remote storage.",
+			ConstLabels: map[string]string{"host": conf.Host, "port": strconv.Itoa(conf.Port)},
 		},
 	)
 
 	w.ko = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "failed_samples_total",
-			Help: "Total number of processed samples which failed on send to remote storage.",
+			Name:        "failed_samples_total",
+			Help:        "Total number of processed samples which failed on send to remote storage.",
+			ConstLabels: map[string]string{"host": conf.Host, "port": strconv.Itoa(conf.Port)},
 		},
 	)
 
 	w.test = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "prometheus_remote_storage_sent_batch_duration_seconds_bucket_test",
-			Help: "Test metric to ensure backfilled metrics are readable via prometheus.",
+			Name:        "prometheus_remote_storage_sent_batch_duration_seconds_bucket_test",
+			Help:        "Test metric to ensure backfilled metrics are readable via prometheus.",
+			ConstLabels: map[string]string{"host": conf.Host, "port": strconv.Itoa(conf.Port)},
 		},
 	)
 
 	w.timings = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
-			Name:    "sent_batch_duration_seconds",
-			Help:    "Duration of sample batch send calls to the remote storage.",
-			Buckets: prometheus.DefBuckets,
+			Name:        "sent_batch_duration_seconds",
+			Help:        "Duration of sample batch send calls to the remote storage.",
+			Buckets:     prometheus.DefBuckets,
+			ConstLabels: map[string]string{"host": conf.Host, "port": strconv.Itoa(conf.Port)},
 		},
 	)
 
 	w.rx = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "received_samples_total",
-			Help: "Total number of received samples.",
+			Name:        "received_samples_total",
+			Help:        "Total number of received samples.",
+			ConstLabels: map[string]string{"host": conf.Host, "port": strconv.Itoa(conf.Port)},
 		},
 	)
 

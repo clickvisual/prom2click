@@ -1,6 +1,8 @@
 package prom2click
 
 import (
+	"fmt"
+
 	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
 )
@@ -32,6 +34,27 @@ func Load(key string) *Container {
 	return c
 }
 
+func LoadBatch(key string) []*Container {
+	containers := make([]*Container, 0)
+	configs := make([]*config, 0)
+	if err := econf.UnmarshalKey(key, &configs); err != nil {
+		elog.EgoLogger.With(elog.FieldComponent(PackageName)).Panic("parse config error", elog.FieldErr(err), elog.FieldKey(key))
+		return nil
+	}
+	for index := range configs {
+		c := DefaultContainer()
+		c.logger = c.logger.With(elog.FieldComponentName(key))
+		c.config.Host = configs[index].Host
+		c.config.Port = configs[index].Port
+		c.config.ClickhouseDSN = configs[index].ClickhouseDSN
+		c.config.ClickhouseDB = configs[index].ClickhouseDB
+		c.config.ClickhouseTable = configs[index].ClickhouseTable
+		c.name = fmt.Sprintf("%s_%d", key, index)
+		containers = append(containers, c)
+	}
+	return containers
+}
+
 // Build 构建组件
 func (c *Container) Build(options ...Option) *Component {
 	for _, option := range options {
@@ -45,6 +68,5 @@ func (c *Container) Build(options ...Option) *Component {
 	if c.config.EnableMetricInterceptor {
 		server.Use(metricServerInterceptor())
 	}
-
 	return server
 }
