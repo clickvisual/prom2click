@@ -9,6 +9,8 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/gotomicro/cetus/l"
+	"github.com/gotomicro/ego/core/elog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
@@ -44,7 +46,7 @@ func NewWriter(conf *config) (*promWriter, error) {
 	w.requests = make(chan *promRequest, conf.ClickhouseChanSize)
 	w.db, err = sql.Open("clickhouse", w.config.ClickhouseDSN)
 	if err != nil {
-		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
+		elog.Error("writer", l.S("step", "open"), l.E(err))
 		return w, err
 	}
 
@@ -129,10 +131,9 @@ func (w *promWriter) process(req *prompb.WriteRequest) {
 }
 
 func (w *promWriter) Start() {
-
 	go func() {
 		w.wg.Add(1)
-		fmt.Println("Writer starting..")
+		elog.Info("writer", l.S("step", "start"))
 		sql := fmt.Sprintf(insertSQL, w.config.ClickhouseDB, w.config.ClickhouseTable)
 		ok := true
 		for ok {
@@ -146,7 +147,7 @@ func (w *promWriter) Start() {
 				// get requet and also check if channel is closed
 				req, ok = <-w.requests
 				if !ok {
-					fmt.Println("Writer stopping..")
+					elog.Info("writer", l.S("step", "stopping"))
 					break
 				}
 				reqs = append(reqs, req)
@@ -161,7 +162,7 @@ func (w *promWriter) Start() {
 			// post them to db all at once
 			tx, err := w.db.Begin()
 			if err != nil {
-				fmt.Printf("Error: begin transaction: %s\n", err.Error())
+				elog.Error("writer", l.S("step", "begin"), l.E(err))
 				w.ko.Add(1.0)
 				continue
 			}
@@ -170,7 +171,7 @@ func (w *promWriter) Start() {
 			smt, err := tx.Prepare(sql)
 			for _, req := range reqs {
 				if err != nil {
-					fmt.Printf("Error: prepare statement: %s\n", err.Error())
+					elog.Error("writer", l.S("step", "prepare"), l.E(err))
 					w.ko.Add(1.0)
 					continue
 				}
@@ -181,14 +182,14 @@ func (w *promWriter) Start() {
 				_, err = smt.Exec(req.ts, req.name, req.tags, req.val, req.ts)
 
 				if err != nil {
-					fmt.Printf("Error: statement exec: %s\n", err.Error())
+					elog.Error("writer", l.S("step", "exec"), l.E(err))
 					w.ko.Add(1.0)
 				}
 			}
 
 			// commit and record metrics
 			if err = tx.Commit(); err != nil {
-				fmt.Printf("Error: commit failed: %s\n", err.Error())
+				elog.Error("writer", l.S("step", "commit"), l.E(err))
 				w.ko.Add(1.0)
 			} else {
 				w.tx.Add(float64(nmetrics))
@@ -196,7 +197,7 @@ func (w *promWriter) Start() {
 			}
 
 		}
-		fmt.Println("Writer stopped..")
+		elog.Info("writer", l.S("step", "stopped"))
 		w.wg.Done()
 	}()
 }

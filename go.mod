@@ -1,18 +1,19 @@
 module github.com/clickvisual/prom2click
 
-go 1.18
+go 1.20
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.2.0
 	github.com/gin-gonic/gin v1.8.1
+	github.com/gotomicro/cetus/l v0.0.0-20230725040649-ab58de0846c1
 	github.com/gotomicro/ego v1.1.2
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v0.35.0
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/trace v1.7.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.24.0
 	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac
 	google.golang.org/protobuf v1.28.0
 )

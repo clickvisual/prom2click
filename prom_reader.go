@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gotomicro/cetus/l"
+	"github.com/gotomicro/ego/core/elog"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 )
@@ -21,7 +23,7 @@ func NewReader(conf *config) (*promReader, error) {
 	r.conf = conf
 	r.db, err = sql.Open("clickhouse", r.conf.ClickhouseDSN)
 	if err != nil {
-		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
+		elog.Error("reader", l.E(err))
 		return r, err
 	}
 
@@ -45,32 +47,18 @@ func (r *promReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error)
 	rcount := 0
 	for _, q := range req.Queries {
 		// remove me..
-		fmt.Printf("\nquery: start: %d, end: %d\n\n", q.StartTimestampMs, q.EndTimestampMs)
-
 		// get the select sql
 		sqlStr, err = r.getSQL(q)
-		fmt.Printf("query: running sql: %s\n\n", sqlStr)
+		elog.Debug("reader", l.I64("start", q.StartTimestampMs), l.I64("end", q.EndTimestampMs), l.S("sql", sqlStr))
 		if err != nil {
-			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
+			elog.Error("reader", l.E(err), l.S("step", "getSQL"))
 			return &resp, err
 		}
-
-		// get the select sql
-		if err != nil {
-			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
-			return &resp, err
-		}
-
-		// todo: metrics on number of errors, rows, selects, timings, etc
 		rows, err = r.db.Query(sqlStr)
 		if err != nil {
-			fmt.Printf("Error: query failed: %s", sqlStr)
-			fmt.Printf("Error: query error: %s\n", err)
+			elog.Error("reader", l.E(err), l.S("step", "query"), l.S("sql", sqlStr))
 			return &resp, err
 		}
-
-		// build map of timeseries from sql result
-
 		for rows.Next() {
 			rcount++
 			var (
@@ -81,7 +69,7 @@ func (r *promReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error)
 				value float64
 			)
 			if err = rows.Scan(&cnt, &t, &name, &tags, &value); err != nil {
-				fmt.Printf("Error: scan: %s\n", err.Error())
+				elog.Error("reader", l.S("step", "scan"), l.E(err))
 			}
 
 			// borrowed from influx remote storage adapter - array sep
@@ -104,9 +92,7 @@ func (r *promReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error)
 	for _, ts := range tsres {
 		resp.Results[0].Timeseries = append(resp.Results[0].Timeseries, ts)
 	}
-
-	fmt.Printf("query: returning %d rows for %d queries\n", rcount, len(req.Queries))
-
+	elog.Debug("reader", l.S("step", "query"), l.I("count", rcount), l.I("queries", len(req.Queries)))
 	return &resp, nil
 
 }
@@ -118,7 +104,7 @@ func makeLabels(tags []string) []prompb.Label {
 	for _, tag := range tags {
 		vals := strings.SplitN(tag, "=", 2)
 		if len(vals) != 2 {
-			fmt.Printf("Error unpacking tag key/val: %s\n", tag)
+			elog.Error("reader", l.S("step", "makeLabels"), l.S("tag", tag))
 			continue
 		}
 		if vals[1] == "" {
@@ -180,7 +166,8 @@ func (r *promReader) getSQL(query *prompb.Query) (string, error) {
 					insql.WriteString(istr)
 				}
 			}
-			wstr := fmt.Sprintf(asql, insql.String())
+
+			wstr := fmt.Sprintf(asql, emptySQLHandling(insql.String()))
 			mwhereSQL = append(mwhereSQL, wstr)
 
 		case prompb.LabelMatcher_NEQ:
@@ -199,7 +186,8 @@ func (r *promReader) getSQL(query *prompb.Query) (string, error) {
 					insql.WriteString(istr)
 				}
 			}
-			wstr := fmt.Sprintf(asql, insql.String())
+
+			wstr := fmt.Sprintf(asql, emptySQLHandling(insql.String()))
 			mwhereSQL = append(mwhereSQL, wstr)
 
 		case prompb.LabelMatcher_RE:
@@ -232,6 +220,13 @@ func (r *promReader) getSQL(query *prompb.Query) (string, error) {
 	sql := fmt.Sprintf(tempSQL, tselectSQL, r.conf.ClickhouseQuantile, r.conf.ClickhouseDB, r.conf.ClickhouseTable, twhereSQL,
 		strings.Join(mwhereSQL, " AND "))
 	return sql, nil
+}
+
+func emptySQLHandling(sql string) string {
+	if sql == "" {
+		return `''`
+	}
+	return sql
 }
 
 // getTimePeriod return select and where SQL chunks relating to the time period -or- error
