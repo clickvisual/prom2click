@@ -49,6 +49,25 @@ func LoadBatch(key string) []*Container {
 		c.config.ClickhouseDSN = configs[index].ClickhouseDSN
 		c.config.ClickhouseDB = configs[index].ClickhouseDB
 		c.config.ClickhouseTable = configs[index].ClickhouseTable
+		c.config.ClickhouseBatch = configs[index].ClickhouseBatch
+		c.config.ClickhouseMaxSamples = configs[index].ClickhouseMaxSamples
+		c.config.ClickhouseMinPeriod = configs[index].ClickhouseMinPeriod
+		c.config.ClickhouseQuantile = configs[index].ClickhouseQuantile
+		c.config.ClickhouseHTTPWritePath = configs[index].ClickhouseHTTPWritePath
+		c.config.ClickhouseHTTPReadPath = configs[index].ClickhouseHTTPReadPath
+		c.config.ClickhouseChanSize = configs[index].ClickhouseChanSize
+		c.config.ServerReadTimeout = configs[index].ServerReadTimeout
+		c.config.ServerReadHeaderTimeout = configs[index].ServerReadHeaderTimeout
+		c.config.ServerWriteTimeout = configs[index].ServerWriteTimeout
+		c.config.ContextTimeout = configs[index].ContextTimeout
+		c.config.EnableMetricInterceptor = configs[index].EnableMetricInterceptor
+		c.config.SlowLogThreshold = configs[index].SlowLogThreshold
+		c.config.EnableAccessInterceptor = configs[index].EnableAccessInterceptor
+		c.config.EnableAccessInterceptorReq = configs[index].EnableAccessInterceptorReq
+		c.config.EnableAccessInterceptorRes = configs[index].EnableAccessInterceptorRes
+		c.config.EnableTrustedCustomHeader = configs[index].EnableTrustedCustomHeader
+		c.config.TrustedPlatform = configs[index].TrustedPlatform
+
 		c.name = fmt.Sprintf("%s_%d", key, index)
 		containers = append(containers, c)
 	}
