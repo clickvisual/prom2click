@@ -110,11 +110,11 @@ func (c *Container) defaultServerInterceptor() gin.HandlerFunc {
 		// 只有开启了EnableAccessInterceptorRes时拷贝request body
 		// 也可以直接使用econf.Sub(c.name).GetBool("EnableAccessInterceptorReq")，不过从econf动态查找配置性能可能会比较差，暂时先用锁代替
 		c.config.mu.RLock()
-		if c.config.EnableAccessInterceptorReq {
+		if c.config.EnableAccessInterceptorReq != nil && *c.config.EnableAccessInterceptorReq {
 			ctx.Request.Body = ioutil.NopCloser(io.TeeReader(ctx.Request.Body, &rb))
 		}
 		// 只有开启了EnableAccessInterceptorRes时才替换response writer
-		if c.config.EnableAccessInterceptorRes {
+		if c.config.EnableAccessInterceptorRes != nil && *c.config.EnableAccessInterceptorRes {
 			rw = &resWriter{ctx.Writer, &bytes.Buffer{}}
 			ctx.Writer = rw
 		}
@@ -129,7 +129,7 @@ func (c *Container) defaultServerInterceptor() gin.HandlerFunc {
 		// 必须在defer外层，因为要赋值，替换ctx
 		for _, key := range loggerKeys {
 			// 赋值context
-			getHeaderValue(ctx, key, c.config.EnableTrustedCustomHeader)
+			getHeaderValue(ctx, key, c.config.EnableTrustedCustomHeader != nil && *c.config.EnableTrustedCustomHeader)
 		}
 
 		defer func() {
@@ -145,15 +145,15 @@ func (c *Container) defaultServerInterceptor() gin.HandlerFunc {
 			)
 
 			c.config.mu.RLock()
-			if c.config.EnableAccessInterceptorReq || c.config.EnableAccessInterceptorRes {
-				if c.config.EnableAccessInterceptorReq {
+			if (c.config.EnableAccessInterceptorReq != nil && *c.config.EnableAccessInterceptorReq) || (c.config.EnableAccessInterceptorRes != nil && *c.config.EnableAccessInterceptorRes) {
+				if c.config.EnableAccessInterceptorReq != nil && *c.config.EnableAccessInterceptorReq {
 					fields = append(fields, elog.Any("req", map[string]interface{}{
 						"metadata": copyHeaders(ctx.Request.Header),
 						"payload":  rb.String(),
 					}))
 				}
 
-				if c.config.EnableAccessInterceptorRes {
+				if c.config.EnableAccessInterceptorRes != nil && *c.config.EnableAccessInterceptorRes {
 					fields = append(fields, elog.Any("res", map[string]interface{}{
 						"metadata": copyHeaders(ctx.Writer.Header()),
 						"payload":  rw.body.String(),
@@ -197,7 +197,7 @@ func (c *Container) defaultServerInterceptor() gin.HandlerFunc {
 				return
 			}
 			// todo 如果不记录日志的时候，应该早点return
-			if c.config.EnableAccessInterceptor {
+			if c.config.EnableAccessInterceptor != nil && *c.config.EnableAccessInterceptor {
 				fields = append(fields,
 					elog.FieldEvent(event),
 					elog.FieldErrAny(ctx.Errors.ByType(gin.ErrorTypePrivate).String()),
