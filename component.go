@@ -82,8 +82,8 @@ func (c *Component) route() {
 			ctx.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		// ctx.Header("Content-Type", "application/x-protobuf")
-		// ctx.Header("Content-Encoding", "snappy")
+		ctx.Header("Content-Type", "application/x-protobuf")
+		ctx.Header("Content-Encoding", "snappy")
 		err = remote.EncodeReadResponse(resp, ctx.Writer)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, err.Error())

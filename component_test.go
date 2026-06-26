@@ -1,6 +1,7 @@
 package prom2click
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -14,8 +15,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	"github.com/gotomicro/ego/core/constant"
 	"github.com/gotomicro/ego/core/elog"
+	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,6 +84,29 @@ func TestNewComponent(t *testing.T) {
 
 	<-ctx.Done()
 	assert.NoError(t, cmp.Stop())
+}
+
+func TestReadResponseUsesPrometheusRemoteReadHeaders(t *testing.T) {
+	reqBytes, err := proto.Marshal(&prompb.ReadRequest{})
+	assert.NoError(t, err)
+
+	cmp := &Component{
+		Engine: gin.New(),
+		config: &config{
+			ClickhouseHTTPWritePath: "/write",
+			ClickhouseHTTPReadPath:  "/read",
+		},
+		reader: &promReader{},
+	}
+	cmp.route()
+
+	req := httptest.NewRequest(http.MethodPost, "/read", bytes.NewReader(snappy.Encode(nil, reqBytes)))
+	w := httptest.NewRecorder()
+	cmp.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+	assert.Equal(t, "snappy", w.Header().Get("Content-Encoding"))
 }
 
 func loadConfig(t *testing.T, loadClientCert bool) *tls.Config {
